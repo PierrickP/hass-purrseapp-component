@@ -18,6 +18,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .coordinator import PurrseCoordinator
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -54,8 +55,8 @@ async def async_setup_entry(
         entity
         for group in coordinator.data.groups
         for entity in (
-            GroupExpensesTotalSensor(hass, group),  # Première entité
-            GroupOweTotalSensor(hass, group),  # Deuxième entité
+            GroupExpensesTotalSensor(coordinator, hass, group),  # Première entité
+            GroupOweTotalSensor(coordinator, hass, group),  # Deuxième entité
         )
     ]
 
@@ -66,7 +67,7 @@ async def async_setup_entry(
         _LOGGER.info(group["details"]["members"])
 
     member_entities = [
-        GroupMemberSensor(hass, group, member)
+        GroupMemberSensor(coordinator, hass, group, member)
         for group in coordinator.data.groups
         for member in group["details"]["members"]
     ]
@@ -77,15 +78,18 @@ async def async_setup_entry(
     async_add_entities(entities + member_entities)
 
 
-class GroupExpensesTotalSensor(SensorEntity):
+class GroupExpensesTotalSensor(CoordinatorEntity, SensorEntity):
     """Sensor for Group Total Expenses."""
 
     def __init__(
         self,
+        coordinator: PurrseCoordinator,
         hass: HomeAssistant,
         group_entry_infos,
     ) -> None:
         """Initisalisation de notre entité."""
+
+        super().__init__(coordinator)
 
         _LOGGER.info("ICI")
         _LOGGER.info(group_entry_infos)
@@ -123,15 +127,18 @@ class GroupExpensesTotalSensor(SensorEntity):
         return self._attr_default_currency
 
 
-class GroupOweTotalSensor(SensorEntity):
+class GroupOweTotalSensor(CoordinatorEntity, SensorEntity):
     """Sensor for Group Total Expenses."""
 
     def __init__(
         self,
+        coordinator: PurrseCoordinator,
         hass: HomeAssistant,
         group_entry_infos,
     ) -> None:
         """Initisalisation de notre entité."""
+
+        super().__init__(coordinator)
 
         self._attr_name = "Total expenses"
         self._attr_device_info = {
@@ -164,13 +171,18 @@ class GroupOweTotalSensor(SensorEntity):
         return self._attr_default_currency
 
 
-class GroupMemberSensor(SensorEntity):
+class GroupMemberSensor(CoordinatorEntity, SensorEntity):
     """Sensor for a group's member."""
 
     def __init__(
-        self, hass: HomeAssistant, group_entry_infos, member_entry_infos
+        self,
+        coordinator: PurrseCoordinator,
+        hass: HomeAssistant,
+        group_entry_infos,
+        member_entry_infos,
     ) -> None:
         """Initisalisation de notre entité."""
+        super().__init__(coordinator)
 
         _LOGGER.debug("SENSOR Créé un GroupMemberSensor entry=%s", group_entry_infos)
         _LOGGER.info("PLOP")
