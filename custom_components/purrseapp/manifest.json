@@ -3,12 +3,8 @@
   "name": "Purrse.app",
   "codeowners": ["@PierrickP"],
   "config_flow": true,
-  "dependencies": [],
-  "documentation": "https://www.home-assistant.io/integrations/purrseapp",
-  "homekit": {},
+  "documentation": "https://github.com/PierrickP/hass-purrseapp-component",
   "iot_class": "cloud_polling",
-  "requirements": [],
-  "ssdp": [],
-  "zeroconf": [],
+  "issue_tracker": "https://github.com/PierrickP/hass-purrseapp-component/issues",
   "version": "0.0.1"
 }
