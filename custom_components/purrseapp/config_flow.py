@@ -3,25 +3,30 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
-
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
-from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import (
+    ConfigFlow,
+    ConfigFlowResult,
+)
 from homeassistant.exceptions import HomeAssistantError
 
 from .api import APIAuthError, APIConnectionError, PurrseAPI
 from .const import DOMAIN
 
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigFlowResult
+    from homeassistant.core import HomeAssistant
+
 _LOGGER = logging.getLogger(__name__)
 
-# TODO adjust the data schema to the data that you need
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required("token"): str})
 
 
 class PlaceholderHub:
-    """Placeholder class to make tests pass.
+    """
+    Placeholder class to make tests pass.
 
     TODO Remove this placeholder class and replace with things from your PyPI package.
     """
@@ -36,11 +41,11 @@ class PlaceholderHub:
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Validate the user input allows us to connect.
+    """
+    Validate the user input allows us to connect.
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
-
     api = PurrseAPI(hass, data.get("token"))
     try:
         await hass.async_add_executor_job(api.connect)
@@ -67,7 +72,7 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                info = await validate_input(self.hass, user_input)
+                await validate_input(self.hass, user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
@@ -90,17 +95,31 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
             self.context["entry_id"]
         )
 
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_update_reload_and_abort(
-                self._get_reconfigure_entry(),
-                data_updates=user_input,
-            )
+            try:
+                await validate_input(self.hass, user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
+            else:
+                return self.async_update_reload_and_abort(
+                    config_entry,
+                    unique_id=config_entry.unique_id,
+                    data={**config_entry.data, **user_input},
+                    reason="reconfigure_successful",
+                )
 
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=self.add_suggested_values_to_schema(
                 STEP_USER_DATA_SCHEMA, config_entry.data
             ),
+            errors=errors,
         )
 
 

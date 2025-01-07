@@ -4,10 +4,10 @@ import asyncio
 import logging
 
 import aiohttp
-
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .const import PURRSE_API_BASE_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,12 +17,10 @@ REQUEST_TIMEOUT = 5
 class PurrseAPI:
     """Purrse.app API Class."""
 
-    # base_url = "https://purrse.app/api/v1{path}"
-    base_url = "http://localhost:5173/api/v1{path}"
+    base_url = PURRSE_API_BASE_URL
 
     def __init__(self, hass: HomeAssistant, api_token: str) -> None:
         """Init PurrseAPI class."""
-
         _LOGGER.info("PurrseAPI __init__ %s", api_token)
         self.hass = hass
         self._api_token = api_token
@@ -34,9 +32,8 @@ class PurrseAPI:
             return True
         raise APIAuthError("Error connecting to api. Invalid username or password.")
 
-    async def getGroups(self):
+    async def get_groups(self) -> list:
         """Get all groups."""
-
         _LOGGER.info("GET GROUPS")
 
         try:
@@ -59,9 +56,8 @@ class PurrseAPI:
         #     _LOGGER.error("Received unexpected JSON from CityBikes API endpoint: %s", err)
         raise PurrseAPIRequestError
 
-    async def getGroup(self, group_id):
+    async def get_group(self, group_id: str) -> dict:
         """Get group."""
-
         _LOGGER.info("GET GROUP %s", group_id)
 
         # return (
