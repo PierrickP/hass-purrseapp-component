@@ -19,55 +19,46 @@ class PurrseAPI:
 
     base_url = PURRSE_API_BASE_URL
 
-    def __init__(self, hass: HomeAssistant, api_token: str) -> None:
+    def __init__(self, hass: HomeAssistant, api_token: str | None) -> None:
         """Init PurrseAPI class."""
-        _LOGGER.info("PurrseAPI __init__ %s", api_token)
         self.hass = hass
         self._api_token = api_token
         self._headers = {"x-api-token": api_token}
 
     def connect(self) -> bool:
-        """Connect to api."""
+        """
+        Connect to api.
+
+        @todo @pierrickp Do a real test on the api to validate the token
+        """
         if self._api_token:
             return True
-        raise APIAuthError("Error connecting to api. Invalid username or password.")
+        raise APIAuthError
 
     async def get_groups(self) -> list:
         """Get all groups."""
-        _LOGGER.info("GET GROUPS")
-
         try:
             session = async_get_clientsession(self.hass)
 
             async with asyncio.timeout(REQUEST_TIMEOUT):
                 req = await session.get(
-                    self.base_url.format(path="/groups"), headers=self._headers
+                    self.base_url.format(path="/groups"),
+                    headers=self._headers,
+                    raise_for_status=True,
                 )
 
             return await req.json()
 
         except TimeoutError:
-            _LOGGER.error("Could not connect to Purrse API endpoint")
-        except aiohttp.ClientError as e:
-            _LOGGER.error("Could not connect to Purrse API endpoint: %s", e)
+            _LOGGER.exception("Could not connect to Purrse API endpoint")
+        except aiohttp.ClientError:
+            _LOGGER.exception("Could not connect to Purrse API endpoint")
         except ValueError:
-            _LOGGER.error("Received non-JSON data from Purrse API endpoint")
-        # except vol.Invalid as err:
-        #     _LOGGER.error("Received unexpected JSON from CityBikes API endpoint: %s", err)
+            _LOGGER.exception("Received non-JSON data from Purrse API endpoint")
         raise PurrseAPIRequestError
 
     async def get_group(self, group_id: str) -> dict:
-        """Get group."""
-        _LOGGER.info("GET GROUP %s", group_id)
-
-        # return (
-        #     {
-        #         "id": group_id,
-        #         "name": "Group 1",
-        #         "device": "EUR",
-        #         "users": [{"name": "pilou", "own": 42}],
-        #     },
-        # )
+        """Get group by id."""
         try:
             session = async_get_clientsession(self.hass)
 
@@ -75,23 +66,21 @@ class PurrseAPI:
                 req = await session.get(
                     self.base_url.format(path=f"/groups/{group_id}"),
                     headers=self._headers,
+                    raise_for_status=True,
                 )
 
             return await req.json()
-        except aiohttp.ClientResponseError as err:
-            _LOGGER.error("Purrse API endpoint error")
-            _LOGGER.error(err)
-        except (TimeoutError, aiohttp.ClientError):
-            _LOGGER.error("Could not connect to Purrse API endpoint")
+        except TimeoutError:
+            _LOGGER.exception("Could not connect to Purrse API endpoint")
+        except aiohttp.ClientError:
+            _LOGGER.exception("Could not connect to Purrse API endpoint")
         except ValueError:
-            _LOGGER.error("Received non-JSON data from Purrse API endpoint")
-        # except vol.Invalid as err:
-        #     _LOGGER.error("Received unexpected JSON from CityBikes API endpoint: %s", err)
+            _LOGGER.exception("Received non-JSON data from Purrse API endpoint")
         raise PurrseAPIRequestError
 
 
 class APIAuthError(Exception):
-    """Exception class for auth error."""
+    """Exception class for API Auth error."""
 
 
 class APIConnectionError(Exception):

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
@@ -16,8 +15,6 @@ if TYPE_CHECKING:
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 type PurrseAppConfigEntry = ConfigEntry[PurrseCoordinator]
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: PurrseAppConfigEntry) -> bool:

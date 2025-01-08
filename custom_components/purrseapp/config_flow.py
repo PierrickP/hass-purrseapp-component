@@ -24,23 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required("token"): str})
 
 
-class PlaceholderHub:
-    """
-    Placeholder class to make tests pass.
-
-    TODO Remove this placeholder class and replace with things from your PyPI package.
-    """
-
-    def __init__(self, host: str) -> None:
-        """Initialize."""
-        self.host = host
-
-    async def authenticate(self, username: str, password: str) -> bool:
-        """Test if we can authenticate with the host."""
-        return True
-
-
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """
     Validate the user input allows us to connect.
 
@@ -49,18 +33,15 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     api = PurrseAPI(hass, data.get("token"))
     try:
         await hass.async_add_executor_job(api.connect)
-        # If you cannot connect, raise CannotConnect
-        # If the authentication is wrong, raise InvalidAuth
+
     except APIAuthError as err:
-        raise InvalidAuth from err
+        raise InvalidAuthError from err
+
     except APIConnectionError as err:
-        raise CannotConnect from err
-
-    # Return info that you want to store in the config entry.
-    return {"title": "Name of the device"}
+        raise CannotConnectError from err
 
 
-class ConfigFlow(ConfigFlow, domain=DOMAIN):
+class PurrseAppConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Purrse.app."""
 
     VERSION = 1
@@ -73,9 +54,9 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 await validate_input(self.hass, user_input)
-            except CannotConnect:
+            except CannotConnectError:
                 errors["base"] = "cannot_connect"
-            except InvalidAuth:
+            except InvalidAuthError:
                 errors["base"] = "invalid_auth"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
@@ -95,21 +76,24 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
             self.context["entry_id"]
         )
 
+        if config_entry is None:
+            _LOGGER.exception("config_entry is None on async_step_reconfigure")
+            raise ConfigError
+
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
                 await validate_input(self.hass, user_input)
-            except CannotConnect:
+            except CannotConnectError:
                 errors["base"] = "cannot_connect"
-            except InvalidAuth:
+            except InvalidAuthError:
                 errors["base"] = "invalid_auth"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
                 return self.async_update_reload_and_abort(
-                    config_entry,
-                    unique_id=config_entry.unique_id,
+                    entry=config_entry,
                     data={**config_entry.data, **user_input},
                     reason="reconfigure_successful",
                 )
@@ -123,9 +107,13 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
 
-class CannotConnect(HomeAssistantError):
+class ConfigError(HomeAssistantError):
+    """Error to indicate there is an error on the config flow."""
+
+
+class CannotConnectError(HomeAssistantError):
     """Error to indicate we cannot connect."""
 
 
-class InvalidAuth(HomeAssistantError):
+class InvalidAuthError(HomeAssistantError):
     """Error to indicate there is invalid auth."""
