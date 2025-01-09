@@ -11,15 +11,15 @@
     },
     "step": {
       "user": {
-        "title": "Setup Purrse.app integration",
-        "description": "To setup this integration, you must have a premium subscription on purrse.app and to have created a personnal token.",
+        "title": "Configurer l'intégration Purrse.app",
+        "description": "Pour mettre en place cette intégration, vous devez avoir un abonnement premium sur purrse.app et avoir créé un jeton personnel.",
         "data": {
-          "token": "API token"
+          "token": "Jeton d'API"
         }
       },
       "reconfigure": {
         "data": {
-          "token": "API token"
+          "token": "Jeton d'API"
         }
       }
     }
