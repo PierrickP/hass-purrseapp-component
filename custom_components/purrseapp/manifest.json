@@ -6,5 +6,5 @@
   "documentation": "https://github.com/PierrickP/hass-purrseapp-component",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/PierrickP/hass-purrseapp-component/issues",
-  "version": "0.0.1"
+  "version": "1.0.0"
 }
